@@ -5,9 +5,13 @@ import AnchorInput from './components/AnchorInput';
 import Loader from './components/Loader';
 import MemoryPalaceDisplay from './components/MemoryPalaceDisplay';
 import SavedPalaces from './components/SavedPalaces';
+import MemorizationInput from './components/MemorizationInput';
 import { generateMemoryPalace, regeneratePalace } from './services/geminiService';
 import { fileToDataUrl } from './utils/fileUtils';
 import { getSavedPalaces, savePalace, deletePalace as dbDeletePalace } from './services/dbService';
+
+const MAX_LIST_LENGTH = 5000;
+const MAX_ANCHOR_LENGTH = 500;
 
 const App: React.FC = () => {
   const [anchorType, setAnchorType] = useState<AnchorType>('default');
@@ -46,8 +50,19 @@ const App: React.FC = () => {
   }, [memoryPalace]);
 
   const handleGenerate = useCallback(async () => {
-    if (!anchorValue || !memorizationList.trim()) {
+    setError(null);
+    const listItems = memorizationList.split('\n').filter(item => item.trim() !== '');
+
+    if (!anchorValue || listItems.length === 0) {
       setError('Please provide an anchor and a list of items to memorize.');
+      return;
+    }
+    if (memorizationList.length > MAX_LIST_LENGTH) {
+      setError(`The list is too long. Please keep it under ${MAX_LIST_LENGTH} characters.`);
+      return;
+    }
+    if (anchorType !== 'upload' && typeof anchorValue === 'string' && anchorValue.length > MAX_ANCHOR_LENGTH) {
+      setError(`The anchor description is too long. Please keep it under ${MAX_ANCHOR_LENGTH} characters.`);
       return;
     }
 
@@ -56,13 +71,12 @@ const App: React.FC = () => {
     }
 
     setIsLoading(true);
-    setError(null);
     setMemoryPalace(null);
     setJustSaved(false);
 
     try {
-      const listItems = memorizationList.split('\n').filter(item => item.trim() !== '');
-      const result = await generateMemoryPalace(anchorType, anchorValue, listItems);
+      const valueToSend = typeof anchorValue === 'string' ? anchorValue.trim() : anchorValue;
+      const result = await generateMemoryPalace(anchorType, valueToSend, listItems);
       setMemoryPalace(result);
     } catch (err) {
       console.error(err);
@@ -120,7 +134,7 @@ const App: React.FC = () => {
       const baseImageUrl = memoryPalace.imageGenerations[activeGenerationIndex][selectedImageIndex];
       const listItems = memorizationList.split('\n').filter(item => item.trim() !== '');
       
-      const regenerationResult = await regeneratePalace(baseImageUrl, editPrompt, listItems);
+      const regenerationResult = await regeneratePalace(baseImageUrl, editPrompt.trim(), listItems);
 
       setMemoryPalace(prev => {
         if (!prev) return null;
@@ -227,20 +241,19 @@ const App: React.FC = () => {
                   setAnchorType={setAnchorType}
                   anchorValue={anchorValue}
                   setAnchorValue={setAnchorValue}
+                  maxLength={MAX_ANCHOR_LENGTH}
                 />
               </div>
               <hr className="border-gray-200" />
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 mb-4">
                   <div className="w-8 h-8 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full font-bold text-lg">2</div>
                   <h2 className="text-xl font-semibold text-gray-900">List Items to Memorize</h2>
                 </div>
-                <textarea
-                  value={memorizationList}
-                  onChange={(e) => setMemorizationList(e.target.value)}
-                  placeholder="Enter each item on a new line..."
-                  rows={6}
-                  className="w-full p-4 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-400 text-base"
+                <MemorizationInput
+                  list={memorizationList}
+                  onListChange={setMemorizationList}
+                  maxLength={MAX_LIST_LENGTH}
                 />
               </div>
             </div>
@@ -263,6 +276,12 @@ const App: React.FC = () => {
                   'Build My Memory Palace'
                 )}
               </button>
+            </div>
+
+            <div className="mt-4 text-center text-xs text-gray-500 max-w-lg mx-auto">
+                <p>
+                    <strong>Privacy & Security:</strong> Your anchor and list are sent to Google's Generative AI for processing. Avoid entering sensitive data. Saved palaces are stored locally and securely in your browser.
+                </p>
             </div>
             
             <div ref={resultsRef}>

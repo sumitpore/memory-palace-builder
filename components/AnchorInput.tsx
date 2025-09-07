@@ -1,6 +1,7 @@
 import React from 'react';
 import type { AnchorType, AnchorValue } from '../types';
 import { UploadIcon, WorldIcon, DefaultIcon } from './icons/InputIcons';
+import Tooltip from './Tooltip';
 
 declare global {
   interface Window {
@@ -13,6 +14,7 @@ interface AnchorInputProps {
   setAnchorType: (type: AnchorType) => void;
   anchorValue: AnchorValue;
   setAnchorValue: (value: AnchorValue) => void;
+  maxLength: number;
 }
 
 const defaultOptions = ['A cozy desk', 'The inside of a car', 'A trusty backpack'];
@@ -40,7 +42,7 @@ const famousPlaces = [
   'Petra, Jordan',
 ];
 
-const AnchorInput: React.FC<AnchorInputProps> = ({ anchorType, setAnchorType, anchorValue, setAnchorValue }) => {
+const AnchorInput: React.FC<AnchorInputProps> = ({ anchorType, setAnchorType, anchorValue, setAnchorValue, maxLength }) => {
   const placeInputRef = React.useRef<HTMLInputElement>(null);
   const isAutocompleteInitialized = React.useRef(false);
   
@@ -110,7 +112,7 @@ const AnchorInput: React.FC<AnchorInputProps> = ({ anchorType, setAnchorType, an
   }
 
   const tabClass = (type: AnchorType) => 
-    `flex-1 py-2.5 px-3 text-sm font-medium text-center rounded-md transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+    `w-full flex-1 py-2.5 px-3 text-sm font-medium text-center rounded-md transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
         anchorType === type 
           ? 'bg-white text-gray-900 shadow-sm border border-gray-200' 
           : 'text-gray-600 hover:bg-gray-100'
@@ -119,11 +121,20 @@ const AnchorInput: React.FC<AnchorInputProps> = ({ anchorType, setAnchorType, an
   return (
     <div className="space-y-4">
       <div className="flex space-x-2 p-1 bg-gray-100 rounded-lg border border-gray-200">
-        <button onClick={() => handleTabClick('default')} className={tabClass('default')}><DefaultIcon className="w-5 h-5"/>Defaults</button>
-        <button onClick={() => handleTabClick('place')} className={tabClass('place')}>
-          <WorldIcon className="w-5 h-5"/>Real Place
-        </button>
-        <button onClick={() => handleTabClick('upload')} className={tabClass('upload')}><UploadIcon className="w-5 h-5"/>Upload</button>
+        <div className="relative group flex-1">
+          <button onClick={() => handleTabClick('default')} className={tabClass('default')}><DefaultIcon className="w-5 h-5"/>Defaults</button>
+          <Tooltip text="Use a common, pre-defined object as an anchor." position="bottom" />
+        </div>
+        <div className="relative group flex-1">
+          <button onClick={() => handleTabClick('place')} className={tabClass('place')}>
+            <WorldIcon className="w-5 h-5"/>Real Place
+          </button>
+          <Tooltip text="Use a real-world location from Google Maps as an anchor." position="bottom" />
+        </div>
+        <div className="relative group flex-1">
+          <button onClick={() => handleTabClick('upload')} className={tabClass('upload')}><UploadIcon className="w-5 h-5"/>Upload</button>
+          <Tooltip text="Upload your own image to use as an anchor." position="bottom" />
+        </div>
       </div>
 
       <div className="pt-2">
@@ -142,20 +153,26 @@ const AnchorInput: React.FC<AnchorInputProps> = ({ anchorType, setAnchorType, an
         )}
 
         {anchorType === 'place' && (
-          <div className="space-y-3">
+          <div className="space-y-1">
             {mapsApiKey ? (
-              <input
-                ref={placeInputRef}
-                type="text"
-                value={typeof anchorValue === 'string' ? anchorValue : ''}
-                onChange={(e) => setAnchorValue(e.target.value)}
-                placeholder="e.g., The Eiffel Tower"
-                className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-gray-400"
-              />
+              <>
+                <input
+                  ref={placeInputRef}
+                  type="text"
+                  value={typeof anchorValue === 'string' ? anchorValue : ''}
+                  onChange={(e) => setAnchorValue(e.target.value)}
+                  placeholder="e.g., The Eiffel Tower"
+                  maxLength={maxLength}
+                  className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder-gray-400"
+                />
+                 <div className="text-right text-sm text-gray-500 pr-1">
+                  {typeof anchorValue === 'string' ? anchorValue.length : 0} / {maxLength}
+                </div>
+              </>
             ) : (
               <>
-                <div className="p-3 bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm rounded-lg text-center">
-                  <strong>Notice:</strong> To search for any place, set a Google Maps API Key. Using a limited list of famous places.
+                <div className="p-3 bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm rounded-lg text-center mb-3">
+                  As Google Maps API is not enabled on this project, using a limited list of famous places.
                 </div>
                 <select
                   value={typeof anchorValue === 'string' ? anchorValue : ''}

@@ -1,4 +1,5 @@
 import React from 'react';
+import Tooltip from './Tooltip';
 
 const BrainIcon: React.FC<{className?: string}> = ({className}) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
@@ -37,6 +38,7 @@ const Header: React.FC<HeaderProps> = ({ palaceCount, onToggleMenu }) => {
       
       {palaceCount > 0 && (
         <div className="absolute top-0 right-0">
+          <div className="relative group">
             <button
               id="saved-palaces-button"
               onClick={onToggleMenu}
@@ -48,6 +50,8 @@ const Header: React.FC<HeaderProps> = ({ palaceCount, onToggleMenu }) => {
                 {palaceCount}
               </span>
             </button>
+            <Tooltip text={`View your ${palaceCount} saved palaces`} position="bottom" />
+          </div>
         </div>
       )}
     </div>
