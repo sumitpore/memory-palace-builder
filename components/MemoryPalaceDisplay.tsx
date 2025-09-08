@@ -51,19 +51,21 @@ const MemoryPalaceDisplay: React.FC<MemoryPalaceDisplayProps> = ({
   
   const editInputRef = useRef<HTMLTextAreaElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const prevGenerationsLength = useRef(palace.imageGenerations?.length ?? 0);
 
   const hasGenerations = 'imageGenerations' in palace && palace.imageGenerations && palace.imageGenerations.length > 0;
 
   useEffect(() => {
-    if (hasGenerations) {
-      // When palace's generations change (e.g., a new one is added), jump to the new one
-      const lastGenerationIndex = palace.imageGenerations.length - 1;
-      if (activeGenerationIndex !== lastGenerationIndex) {
-        setActiveGenerationIndex(lastGenerationIndex);
-        setSelectedImageIndex(0);
-      }
+    const currentLength = palace.imageGenerations?.length ?? 0;
+    if (hasGenerations && currentLength > prevGenerationsLength.current) {
+      // A new generation was added, so we jump to view it.
+      const lastGenerationIndex = currentLength - 1;
+      setActiveGenerationIndex(lastGenerationIndex);
+      setSelectedImageIndex(0);
     }
-  }, [palace.imageGenerations, hasGenerations, activeGenerationIndex]);
+    // Update the ref for the next render cycle.
+    prevGenerationsLength.current = currentLength;
+  }, [palace.imageGenerations, hasGenerations]);
   
   useEffect(() => {
     setEditableTitle(palace.title);
